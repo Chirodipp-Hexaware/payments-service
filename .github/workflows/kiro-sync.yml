@@ -28,6 +28,16 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
+      - name: Verify KIRO_SYNC_TOKEN is configured
+        env:
+          KIRO_SYNC_TOKEN: ${{ secrets.KIRO_SYNC_TOKEN }}
+        run: |
+          if [ -z "${KIRO_SYNC_TOKEN}" ]; then
+            echo "::error::KIRO_SYNC_TOKEN secret is not set. It must be a token with read access to ${DIST_REPO} (the default GITHUB_TOKEN cannot read a separate repository)."
+            exit 1
+          fi
+          echo "KIRO_SYNC_TOKEN is present."
+
       - name: Checkout this repo
         uses: actions/checkout@v4
 
@@ -37,7 +47,7 @@ jobs:
           repository: ${{ env.DIST_REPO }}
           ref: ${{ env.DIST_REF }}
           path: _dist
-          token: ${{ secrets.KIRO_SYNC_TOKEN || github.token }}
+          token: ${{ secrets.KIRO_SYNC_TOKEN }}
 
       - name: Mirror org steering and hooks into namespaced folders
         run: |
@@ -73,6 +83,8 @@ jobs:
         if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
+          # KIRO_SYNC_TOKEN so the PR is attributed to the sync identity and can
+          # trigger downstream checks; falls back to the default token for this repo.
           token: ${{ secrets.KIRO_SYNC_TOKEN || github.token }}
           branch: chore/kiro-sync
           commit-message: "chore(kiro-sync): update org steering/hooks from kiro-guardrails-dist"
