@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Cardholder Data Scan on Save",
+      "trigger": "PostFileSave",
+      "matcher": "\\.(ts|tsx|js|json|ya?ml)$",
+      "action": {
+        "type": "command",
+        "command": "file=$(cat -); if grep -RInE '\\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13})\\b' \"$file\" 2>/dev/null; then echo 'Potential PAN / cardholder data detected — remove before commit (PCI, org security.md)'; exit 2; fi"
+      }
+    }
+  ]
+}

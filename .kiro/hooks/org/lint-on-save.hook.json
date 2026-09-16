@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Lint on Save",
+      "trigger": "PostFileSave",
+      "matcher": "\\.(ts|tsx|js|jsx|java|json|md)$",
+      "action": {
+        "type": "command",
+        "command": "if [ -f package.json ] && grep -q '\"lint\"' package.json; then npm run lint --silent; elif [ -f pom.xml ]; then mvn -q spotless:check; elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then ./gradlew spotlessCheck --console=plain; else echo 'No recognized linter; skipping'; fi"
+      }
+    }
+  ]
+}

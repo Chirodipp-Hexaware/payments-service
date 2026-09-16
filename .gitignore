@@ -1,0 +1,20 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+
+# Local secrets — never commit
+.env
+.env.*
+*.pem
+*.key
+
+# Dependencies / build output
+node_modules/
+dist/
+build/
+target/
+
+# Keep Kiro spec history and artifacts under version control, but ignore
+# transient local Kiro state if any tooling writes it.
+.kiro/**/*.log

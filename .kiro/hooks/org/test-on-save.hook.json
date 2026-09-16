@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Test on Save",
+      "trigger": "PostFileSave",
+      "matcher": "\\.(ts|tsx|js|jsx|java)$",
+      "action": {
+        "type": "command",
+        "command": "if [ -f pom.xml ]; then mvn -q -DfailIfNoTests=false test; elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then ./gradlew test --console=plain; elif [ -f package.json ]; then npm test --silent -- --run; else echo 'No recognized build file; skipping tests'; fi"
+      }
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+name: kiro-sync
+
+# Pulls the latest org knowledge base from kiro-guardrails-dist and, if anything
+# changed, opens a PR updating the namespaced org content in this repo:
+#   .kiro/steering/org/   ← steering/org-standards/* + steering/design-template.md
+#   .kiro/hooks/org/      ← hooks/*
+# Project-owned files (product.md, tech.md, structure.md, specs/, project hooks,
+# settings/mcp.json) are never touched by this workflow.
+#
+# NOTE: GitHub only executes workflows from the repo-root .github/workflows/
+# directory, so this file lives here rather than under .kiro/ (the repo spec
+# shows it nested under .kiro/, but a workflow there would never run).
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # weekly, Monday 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  DIST_REPO: Chirodipp-Hexaware/kiro-guardrails-dist
+  DIST_REF: main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+
+      - name: Checkout org knowledge base (dist)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.DIST_REPO }}
+          ref: ${{ env.DIST_REF }}
+          path: _dist
+          token: ${{ secrets.KIRO_SYNC_TOKEN || github.token }}
+
+      - name: Mirror org steering and hooks into namespaced folders
+        run: |
+          set -euo pipefail
+          mkdir -p .kiro/steering/org .kiro/hooks/org
+
+          # Steering (flattened): org-standards/* + design-template.md
+          cp _dist/steering/org-standards/coding-standards.md  .kiro/steering/org/coding-standards.md
+          cp _dist/steering/org-standards/test-conventions.md  .kiro/steering/org/test-conventions.md
+          cp _dist/steering/org-standards/security.md          .kiro/steering/org/security.md
+          cp _dist/steering/design-template.md                 .kiro/steering/org/design-template.md
+
+          # Hooks (namespaced)
+          cp _dist/hooks/*.json .kiro/hooks/org/
+
+          # Record the synced version for clean diffs
+          cp _dist/VERSION .kiro/steering/org/.synced-version
+
+      - name: Detect changes
+        id: diff
+        run: |
+          if git diff --quiet -- .kiro/steering/org .kiro/hooks/org; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Clean up dist checkout
+        if: always()
+        run: rm -rf _dist
+
+      - name: Open sync PR
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.KIRO_SYNC_TOKEN || github.token }}
+          branch: chore/kiro-sync
+          commit-message: "chore(kiro-sync): update org steering/hooks from kiro-guardrails-dist"
+          title: "chore(kiro-sync): sync org knowledge base"
+          body: |
+            Automated sync of org steering and hooks from
+            `${{ env.DIST_REPO }}@${{ env.DIST_REF }}`.
+
+            Only namespaced org content is updated:
+            - `.kiro/steering/org/`
+            - `.kiro/hooks/org/`
+
+            Project-owned steering, specs, project hooks, and settings are untouched.
+            Review and merge to adopt the latest org baseline.
+          labels: kiro-sync
+          delete-branch: true

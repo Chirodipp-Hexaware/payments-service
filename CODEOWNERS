@@ -1,0 +1,17 @@
+# CODEOWNERS — payments-service
+#
+# Docs: https://docs.github.com/articles/about-code-owners
+
+# Default owner for everything in the repo.
+*                       @Chirodipp-Hexaware
+
+# Org-synced knowledge base is owned by the platform team — do not hand-edit;
+# changes flow in through the kiro-sync workflow PR.
+/.kiro/steering/org/    @Chirodipp-Hexaware
+/.kiro/hooks/org/       @Chirodipp-Hexaware
+
+# Project-owned steering and specs are owned by the service team.
+/.kiro/steering/product.md    @Chirodipp-Hexaware
+/.kiro/steering/tech.md       @Chirodipp-Hexaware
+/.kiro/steering/structure.md  @Chirodipp-Hexaware
+/.kiro/specs/                 @Chirodipp-Hexaware

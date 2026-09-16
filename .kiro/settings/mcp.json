@@ -1,0 +1,54 @@
+{
+  "// note": "Project-local MCP servers for payments-service. This list is bounded by the org MCP allow-list (guardrails/mcp-allowlist.json in kiro-guardrails-dist); a server not on the org allow-list is blocked at the Kiro Profile even if listed here.",
+  "mcpServers": {
+    "github": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${env:GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "disabled": false,
+      "autoApprove": [],
+      "description": "Read repos/issues/PRs, create branches, commit, open PRs. Never merges or pushes to a protected branch without human approval."
+    },
+    "jira": {
+      "command": "jira-mcp-server",
+      "args": ["--site", "hexaware.atlassian.net"],
+      "disabled": false,
+      "autoApprove": [],
+      "description": "Create/update tickets from tasks.md and pull ticket context into spec sessions."
+    },
+    "sonarqube": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "SONARQUBE_URL",
+        "-e", "SONARQUBE_TOKEN",
+        "-e", "SONARQUBE_ORGANIZATION",
+        "sonarsource/sonarqube-mcp"
+      ],
+      "env": {
+        "SONARQUBE_URL": "${env:SONARQUBE_URL}",
+        "SONARQUBE_TOKEN": "${env:SONARQUBE_TOKEN}",
+        "SONARQUBE_ORGANIZATION": "arc"
+      },
+      "disabled": false,
+      "autoApprove": [],
+      "description": "Trigger analysis and read quality-gate status during code review."
+    },
+    "aws": {
+      "command": "aws-agent-toolkit-mcp",
+      "args": ["--region", "us-east-1"],
+      "env": {
+        "AWS_PROFILE": "kiro-dev"
+      },
+      "disabled": false,
+      "autoApprove": [],
+      "description": "Generate and apply CDK/Terraform to provision AWS resources with guardrails and tagging."
+    }
+  }
+}
