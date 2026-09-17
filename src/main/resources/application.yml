@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: orders-lambda
+
+  # Spring Cloud Function — wire up function beans
+  # ordersSearchFunction        → GET /orders/search          (REQ-1 – REQ-3)
+  # ordersSearchByOrderIdFunction → GET /orders/searchByOrderId (REQ-4)
+  cloud:
+    function:
+      definition: ordersSearchFunction;ordersSearchByOrderIdFunction
+
+  # Disable web server — Lambda runs without an embedded HTTP container
+  main:
+    web-application-type: none
+
+# ── Orders domain settings ────────────────────────────────────────────────────
+#
+# All sensitive / environment-specific values are injected via environment variables
+# (GP-02: no hardcoded secrets or resource names).
+#
+# orders.table-name is mapped from the ORDERS_TABLE_NAME environment variable,
+# which Terraform sets on the Lambda function resource.
+orders:
+  table-name: ${ORDERS_TABLE_NAME}
+
+# ── AWS region ────────────────────────────────────────────────────────────────
+cloud:
+  aws:
+    region:
+      static: ${AWS_REGION:us-east-1}
+
+# ── Logging ───────────────────────────────────────────────────────────────────
+logging:
+  level:
+    root: INFO
+    com.arc.orderslambda: DEBUG
+    software.amazon.awssdk: WARN

@@ -1,31 +1,46 @@
----
-inclusion: always
----
+# Product
 
-# Product Context — payments-service
+## What this is
 
-## What This Service Is
+The **orders-lambda** service (Maven artifact `com.arc:orders-lambda`) is a
+serverless read API for customer orders. It runs as an AWS Lambda function
+fronted by an API Gateway v2 HTTP API and backed by a DynamoDB Orders table.
 
-`payments-service` accepts and processes payment requests for the platform. It
-exposes an internal API used by other services to authorize, capture, and query
-payments, and emits payment lifecycle events for downstream consumers.
+Despite the repository name `payments-service`, the code in `src/` implements
+the **Orders Search** capability. Treat "orders-lambda" as the authoritative
+component name.
 
-## Primary Users
+## What it does
 
-- Other backend services (via the approved API layer) initiating payments.
-- Platform/DevOps engineers operating and observing the service.
-- (Read-only) Enterprise Architects reviewing generated `design.md` artifacts.
+Two read-only operations, wired as Spring Cloud Function beans:
 
-## Product Principles
+- **Orders search** (`ordersSearchFunction` → `GET /orders/search`) — returns a
+  customer's orders, newest first, with an optional `status` filter and a
+  `limit`. Backed by the DynamoDB GSI `customerId-orderDate-index`.
+- **Order lookup by id** (`ordersSearchByOrderIdFunction` →
+  `GET /orders/searchByOrderId`) — a direct primary-key `GetItem` on `orderId`,
+  targeting a ≤ 10 ms p95 latency budget.
 
-- Every feature traces back to an explicit, testable requirement (EARS) with a
-  linked entry under `.kiro/specs/`.
-- Payment card data handling follows PCI scope — this service is treated as
-  in-scope and inherits the org security baseline plus any PCI addendum.
-- Public behavior changes (new endpoints, deprecations) follow a notice and
-  sunset policy; no undocumented public API surface.
+## Who uses it
 
-## Out of Scope
+Internal/authorized service clients calling over the HTTP API. Every request
+carries a Bearer JWT. The route is protected by an API Gateway JWT Authorizer
+(signature/expiry/audience verified at the edge), and the Lambda performs a
+defence-in-depth scope check requiring the `orders:read` scope.
 
-- This file describes the payments-service product context only. Org-wide product
-  rules live in the synced org steering under `.kiro/steering/org/`.
+## Value and non-negotiables
+
+- **Privacy by default.** Customer PII (name, email, shipping address) is stored
+  raw but **always masked before it leaves the service tier**. No endpoint
+  returns unmasked PII, and PII must never be logged in plaintext.
+- **Least privilege and no hardcoded config.** Resource names and environment
+  specifics (e.g. the Orders table) come from environment variables at runtime,
+  never from committed source.
+- **Predictable, bounded reads.** Result sets are capped (`limit`, max 100
+  fetched) to keep latency and cost bounded.
+
+## Scope
+
+Read paths only today (search + lookup). There is no write/mutation path in this
+service. Keep new work aligned to the read model unless a spec explicitly
+introduces writes.
